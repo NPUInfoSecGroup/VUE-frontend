@@ -1,250 +1,230 @@
 <template>
   <div class="dashboard-container">
     <!-- 顶部标题栏 -->
-    <div class="app-header">
+    <header class="app-header">
       <div class="header-content">
         <h1 class="app-title">
-          <i class="fas fa-shield-alt"></i>
+          <i class="fas fa-shield-alt" />
           漏洞扫描系统
         </h1>
         <p class="app-subtitle">
-          基于Vue.js构建的企业级安全扫描平台 - 全面保障您的网络安全
+          基于 Vue.js 构建的企业级安全扫描平台 - 全面保障您的网络安全
         </p>
       </div>
 
-      <div class="stats-container">
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-star"></i></div>
-          <div class="stat-info">
-            <div class="stat-label">安全评分</div>
-            <div class="stat-value">92/100</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-server"></i></div>
-          <div class="stat-info">
-            <div class="stat-label">在线设备</div>
-            <div class="stat-value">24</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-history"></i></div>
-          <div class="stat-info">
-            <div class="stat-label">本月扫描</div>
-            <div class="stat-value">18次</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon"><i class="fas fa-bug"></i></div>
-          <div class="stat-info">
-            <div class="stat-label">待处理漏洞</div>
-            <div class="stat-value">7个</div>
-          </div>
-        </div>
-      </div>
-    </div>
+      <!-- 顶部导航按钮 -->
+      <nav class="nav-buttons">
+        <router-link to="/dashboard" class="nav-button">
+          <i class="fas fa-home" /> 主页
+        </router-link>
+        <router-link to="/scan-history" class="nav-button">
+          <i class="fas fa-history" /> 扫描历史
+        </router-link>
+        <router-link to="/report-templates" class="nav-button">
+          <i class="fas fa-file-alt" /> 报告模板
+        </router-link>
+      </nav>
+    </header>
 
     <!-- 主内容区 -->
-    <div class="dashboard-content">
-      <div class="left-panel">
+    <main class="dashboard-content">
+      <div class="module-wrapper target-area">
         <ScanTarget />
       </div>
-
-      <div class="right-panel">
+      <div class="module-wrapper status-area">
         <ScanStatus />
-        <VulnerabilityList />
+      </div>
+      <div class="module-wrapper report-area">
         <ReportGenerator />
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script>
 import ScanTarget from '@/components/ScanTarget.vue'
 import ScanStatus from '@/components/ScanStatus.vue'
-import VulnerabilityList from '@/components/VulnerabilityList.vue'
 import ReportGenerator from '@/components/ReportGenerator.vue'
+
 export default {
+  name: 'Dashboard',
   components: {
     ScanTarget,
     ScanStatus,
-    VulnerabilityList,
     ReportGenerator
-
   }
 }
 </script>
 
 <style scoped>
-/* 全局变量 */
+/***********************************
+ * 调色板 & 全局变量
+ ***********************************/
 :root {
   --primary: #4361ee;
-  --primary-dark: #3a56d4;
-  --secondary: #4a5568;
-  --dark-bg: #1a202c;
-  --card-bg: #2d3748;
+  --primary-dark: #3446b8;
+  --accent: #00dbde;
   --text-primary: #f7fafc;
   --text-secondary: #cbd5e0;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-radius: 12px;
-  --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  --transition: all 0.3s ease;
+  --dark-bg: #1a202c;
+  --card-bg: #242f46;
   --success: #48bb78;
   --warning: #ecc94b;
   --danger: #f56565;
   --info: #4299e1;
+  --border-radius: 16px;
+  --border: rgba(255, 255, 255, 0.08);
+  --box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --transition: all 0.3s ease;
 }
 
+/***********************************
+ * 页面骨架
+ ***********************************/
 .dashboard-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--dark-bg);
+  background: var(--dark-bg);
   color: var(--text-primary);
-  padding: 20px;
+  padding: 24px;
+  overflow-x: hidden;
   position: relative;
-  overflow: hidden;
 }
 
-/* 科技感背景 */
 .dashboard-container::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background:
-      radial-gradient(circle at 10% 20%, rgba(67, 97, 238, 0.1) 0%, transparent 20%),
-      radial-gradient(circle at 90% 30%, rgba(67, 97, 238, 0.1) 0%, transparent 20%),
-      radial-gradient(circle at 50% 80%, rgba(67, 97, 238, 0.1) 0%, transparent 20%);
+      radial-gradient(circle at 15% 25%, rgba(67, 97, 238, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 85% 35%, rgba(67, 97, 238, 0.12) 0%, transparent 45%),
+      radial-gradient(circle at 50% 90%, rgba(67, 97, 238, 0.1) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
+  filter: blur(60px);
 }
 
-/* 顶部应用标题栏 */
+/***********************************
+ * 顶部 Header
+ ***********************************/
 .app-header {
-  background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+  background: linear-gradient(135deg, #1e244d 0%, #2d3771 100%);
   border-radius: var(--border-radius);
+  padding: 32px 28px 24px;
   box-shadow: var(--box-shadow);
   position: relative;
-  overflow: hidden;
-  margin-bottom: 30px;
-  padding: 30px;
   z-index: 1;
+  overflow: hidden;
 }
-
-.app-header::before {
-  content: "";
+.app-header::after {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at top right, rgba(92, 107, 192, 0.4), transparent 70%);
+  top: -40%;
+  right: -40%;
+  width: 90%;
+  height: 180%;
+  background: radial-gradient(circle, rgba(0, 219, 222, 0.25) 0%, transparent 70%);
+  transform: rotate(25deg);
   pointer-events: none;
 }
-
 .header-content {
   position: relative;
   z-index: 2;
+  text-align: center;
 }
-
 .app-title {
-  font-size: 2.5rem;
+  font-size: clamp(1.8rem, 2.2vw + 1rem, 2.75rem);
   font-weight: 700;
-  margin-bottom: 10px;
   display: flex;
+  gap: 16px;
   align-items: center;
-  gap: 15px;
+  justify-content: center;
 }
-
-.app-title i {
-  color: #00dbde;
-}
-
+.app-title i { color: var(--accent); }
 .app-subtitle {
-  font-size: 1.1rem;
+  font-size: 1rem;
+  max-width: 640px;
+  margin: 0.5rem auto 0;
   color: rgba(255, 255, 255, 0.85);
-  font-weight: 400;
-  max-width: 600px;
-  margin: 0 auto;
 }
 
-/* 统计卡片 */
-.stats-container {
+/***********************************
+ * 顶部导航按钮
+ ***********************************/
+.nav-buttons {
   display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 28px;
   flex-wrap: wrap;
-  gap: 20px;
-  margin-top: 30px;
-  justify-content: center;
 }
-
-.stat-card {
-  flex: 1;
-  min-width: 200px;
-  max-width: 250px;
-  background: rgba(255, 255, 255, 0.1);
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
   border-radius: var(--border-radius);
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  text-decoration: none;
   transition: var(--transition);
+  backdrop-filter: blur(5px);
+}
+.nav-button:hover {
+  background: var(--accent);
+  color: #1a202c;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.45);
 }
 
-.stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-}
-
-.stat-icon {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-}
-
-.stat-info {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-/* 主内容区 */
+/***********************************
+ * 主内容区：上两并排，下单行
+ ***********************************/
 .dashboard-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 25px;
-  margin-bottom: 40px;
-  position: relative;
-  z-index: 1;
+  grid-template-areas:
+    'target status'
+    'report report';
+  gap: 28px;
+  margin-top: 42px;
+  grid-auto-rows: 1fr;
+}
+.target-area  { grid-area: target; }
+.status-area  { grid-area: status; }
+.report-area  { grid-area: report; }
+
+/***********************************
+ * 模块包裹器
+ ***********************************/
+.module-wrapper {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  padding: 26px 24px;
+  box-shadow: var(--box-shadow);
+  border: 1px solid var(--border);
+  transition: var(--transition);
+  overflow: hidden;
+  height: 100%;
+}
+.module-wrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
 }
 
-@media (max-width: 1200px) {
+/***********************************
+ * 响应式：窄屏堆叠
+ ***********************************/
+@media (max-width: 1024px) {
   .dashboard-content {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      'target'
+      'status'
+      'report';
   }
-}
-
-.left-panel, .right-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
 }
 </style>
