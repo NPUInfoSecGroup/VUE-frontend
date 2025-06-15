@@ -6,11 +6,11 @@
     </div>
 
     <div class="card-body">
-      <!-- Web扫描配置 -->
+      <!-- 目标配置 -->
       <div class="section">
         <div class="section-title">
           <i class="fas fa-globe-americas" />
-          <span>Web扫描配置</span>
+          <span>目标配置</span>
         </div>
 
         <div class="form-group">
@@ -19,41 +19,60 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="depth">扫描深度：</label>
-          <select id="depth" v-model="scanDepth" class="form-select">
-            <option value="1">1 层</option>
-            <option value="2">2 层</option>
-            <option value="3">3 层</option>
-            <option value="4">4 层</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- 网络扫描配置 -->
-      <div class="section">
-        <div class="section-title">
-          <i class="fas fa-network-wired" />
-          <span>网络扫描配置</span>
-        </div>
-
-        <div class="form-group">
           <label class="form-label" for="ipRange">IP 范围：</label>
           <input id="ipRange" v-model="ipRange" type="text" placeholder="192.168.1.1-192.168.1.255" class="form-input" />
         </div>
+      </div>
+
+      <!-- 扫描工具选择 -->
+      <div class="section">
+        <div class="section-title">
+          <i class="fas fa-tools" />
+          <span>扫描工具配置</span>
+        </div>
 
         <div class="form-group">
-          <label class="form-label" for="ports">端口：</label>
-          <input id="ports" v-model="ports" type="text" placeholder="80,443,8080" class="form-input" />
+          <label class="form-label">选择工具：</label>
+          <div class="tools-grid">
+            <div v-for="(tool, index) in availableTools" :key="index" class="tool-option">
+              <input
+                  type="checkbox"
+                  :id="'tool-' + index"
+                  :value="tool"
+                  v-model="selectedTools"
+                  class="tool-checkbox"
+              >
+              <label :for="'tool-' + index">{{ tool }}</label>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- 操作按钮 -->
+      <!-- 扫描建议 -->
+      <div class="section">
+        <div class="section-title">
+          <i class="fas fa-comment-alt" />
+          <span>扫描建议</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="suggestions">额外参数或建议：</label>
+          <textarea
+              id="suggestions"
+              v-model="suggestions"
+              placeholder="请输入特定的扫描要求或建议..."
+              class="form-textarea"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- 操作按钮 - 统一按钮样式 -->
       <div class="actions">
-        <button class="primary" @click="startScan">
+        <button class="action-btn primary" @click="startScan">
           <i class="fas fa-play" />
-          开始扫描
+          启动扫描
         </button>
-        <button class="secondary" @click="resetForm">
+        <button class="action-btn secondary" @click="resetForm">
           <i class="fas fa-redo" />
           重置
         </button>
@@ -68,21 +87,51 @@ export default {
   data () {
     return {
       targetUrl: '',
-      scanDepth: 1,
       ipRange: '',
-      ports: ''
+      availableTools: [
+        'fenjing', 'fscan', 'dirsearch', 'curl',
+        'githack', 'ds_store_exp', 'gotoscan', 'SQLMap', 'xss'
+      ],
+      selectedTools: [],
+      suggestions: ''
     }
   },
   methods: {
-    startScan () {
-      // TODO: 执行扫描逻辑
-      console.log('开始扫描', this.targetUrl)
+    startScan() {
+      // 表单验证逻辑
+      if (!this.targetUrl && !this.ipRange) {
+        alert('请至少输入一个目标URL或IP范围');
+        return;
+      }
+
+      if (this.selectedTools.length === 0) {
+        alert('请至少选择一个扫描工具');
+        return;
+      }
+
+      console.log('开始扫描配置：', {
+        targetUrl: this.targetUrl,
+        ipRange: this.ipRange,
+        tools: this.selectedTools,
+        suggestions: this.suggestions
+      });
+
+      // 实际扫描逻辑
+      alert(`扫描已启动！使用工具：${this.selectedTools.join(', ')}`);
+
+      // TODO: 调用API启动扫描
+      // this.$store.dispatch('startScan', {
+      //   targetUrl: this.targetUrl,
+      //   ipRange: this.ipRange,
+      //   tools: this.selectedTools,
+      //   suggestions: this.suggestions
+      // });
     },
-    resetForm () {
-      this.targetUrl = ''
-      this.scanDepth = 1
-      this.ipRange = ''
-      this.ports = ''
+    resetForm() {
+      this.targetUrl = '';
+      this.ipRange = '';
+      this.selectedTools = [];
+      this.suggestions = '';
     }
   }
 }
@@ -157,35 +206,93 @@ export default {
   color: var(--text-primary);
 }
 
+.form-textarea {
+  width: 100%;
+  min-height: 80px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tool-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.tool-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.tool-checkbox {
+  margin: 0;
+}
+
 .actions {
   display: flex;
   gap: 16px;
-  margin-top: 10px;
+  margin-top: 30px;
 }
 
-.actions .primary,
-.actions .secondary {
+.action-btn {
   flex: 1;
-  padding: 12px 0;
+  padding: 14px 0;
   border-radius: 8px;
-  border: none;
   font-weight: 600;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid transparent;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.actions .primary {
-  background: var(--accent);
-  color: #1a202c;
+.action-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.1);
 }
 
-.actions .secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border);
+.primary {
+  background: linear-gradient(135deg, #47a8ff, #1a73e8);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-.actions button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+.secondary {
+  background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+  color: #333;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+.primary:hover {
+  background: linear-gradient(135deg, #5cb3ff, #2a85ff);
+  box-shadow: 0 8px 16px rgba(27, 117, 232, 0.3);
+}
+
+.secondary:hover {
+  background: linear-gradient(135deg, #f5f5f5, #e9e9e9);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 </style>
