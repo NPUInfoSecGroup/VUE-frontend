@@ -27,6 +27,21 @@
       <el-button class="action-button tertiary" @click="exportAllTemplates">
         <i class="fas fa-file-export"></i> 批量导出
       </el-button>
+      <input
+          type="file"
+          ref="fileInput"
+          style="display: none"
+          accept=".json"
+          @change="handleFileImport"
+      >
+    </div>
+
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-content">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>加载模板中...</span>
+      </div>
     </div>
 
     <!-- ========== 模板列表 ========== -->
@@ -46,6 +61,12 @@
           </div>
 
           <div class="template-actions">
+            <el-tooltip effect="dark" content="导出模板" placement="top">
+              <el-button circle @click="exportTemplate(template)">
+                <i class="fas fa-download"></i>
+              </el-button>
+            </el-tooltip>
+
             <el-tooltip effect="dark" content="编辑模板" placement="top">
               <el-button circle @click="editTemplate(template)">
                 <i class="fas fa-edit"></i>
@@ -199,12 +220,12 @@
 
           <div class="preview-pane">
             <div class="preview-header">
-            <h4><i class="fas fa-eye"></i> 实时预览</h4>
+              <h4><i class="fas fa-eye"></i> 实时预览</h4>
             </div>
             <div class="preview-content">
-            <div v-html="renderedContent"></div>
+              <div v-html="renderedContent"></div>
             </div>
-            </div>
+          </div>
         </div>
       </div>
 
@@ -220,94 +241,62 @@
 </template>
 
 <script>
-import { ref, reactive, computed, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, reactive, computed, nextTick, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 
 export default {
   setup() {
     // 报告模板数据
-    const templates = ref([
-      {
-        id: 'tpl-001',
-        name: '标准技术报告',
-        isDefault: true,
-        created: '2023-08-12',
-        content: '# 安全扫描报告\n\n## 扫描概述\n...',
-        preview: `<div class="template-preview-content">
-          <h3>安全扫描报告</h3>
+    const templates = ref([])
+    const loading = ref(false)
+    const fileInput = ref(null)
 
-          <div class="preview-stats">
-            <span class="stat-item"><i class="fas fa-bug"></i>
- 漏洞: 12</span>
-
-            <span class="stat-item"><i class="fas fa-exclamation-triangle"></i>
- 严重: 3</span>
-
-          </div>
-
-          <div class="preview-sections">
-            <p>扫描概述 | 漏洞列表 | 修复建议</p>
-
-          </div>
-
+    // 生成预览HTML
+    const generatePreview = (template) => {
+      return `<div class="template-preview-content">
+        <h3>${template.name || '未命名模板'}</h3>
+        <p>最后更新: ${new Date().toLocaleDateString()}</p>
+        <div class="preview-stats">
+          <span class="stat-item"><i class="fas fa-code"></i> 内容行数: ${(template.content || '').split('\n').length}</span>
         </div>
-`
-      },
-      {
-        id: 'tpl-002',
-        name: '管理层摘要报告',
-        isDefault: false,
-        created: '2023-09-01',
-        content: '# 安全风险摘要\n\n## 关键发现\n...',
-        preview: `<div class="template-preview-content">
-          <h3>安全风险摘要</h3>
+      </div>`
+    }
 
-          <div class="preview-stats">
-            <span class="stat-item"><i class="fas fa-chart-pie"></i>
- 风险评级: 高</span>
+    // 使用 require.context 加载模板
+    const loadTemplates = () => {
+      loading.value = true
+      try {
+        const templateContext = require.context(
+            '@/scan-template',
+            false,
+            /\.json$/
+        )
 
-            <span class="stat-item"><i class="fas fa-clock"></i>
- 预计修复: 3天</span>
+        templates.value = templateContext.keys()
+            .map(k => templateContext(k))
+            .map(template => ({
+              id: template.id || `tpl-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+              name: template.name,
+              content: template.content,
+              isDefault: template.isDefault || false,
+              created: template.created || new Date().toLocaleDateString(),
+              preview: template.preview || generatePreview(template)
+            }))
 
-          </div>
+        // 确保至少有一个默认模板
+        if (!templates.value.some(t => t.isDefault) && templates.value.length > 0) {
+          templates.value[0].isDefault = true
+        }
 
-          <div class="preview-sections">
-            <p>执行摘要 | 风险评级 | 行动计划</p>
-
-          </div>
-
-        </div>
-`
-      },
-      {
-        id: 'tpl-003',
-        name: '合规审计报告',
-        isDefault: false,
-        created: '2023-09-15',
-        content: '# 合规审计报告\n\n## 审计范围\n...',
-        preview: `<div class="template-preview-content">
-          <h3>合规审计报告</h3>
-
-          <div class="preview-stats">
-            <span class="stat-item"><i class="fas fa-shield-alt"></i>
- 合规项: 28</span>
-
-            <span class="stat-item"><i class="fas fa-times-circle"></i>
- 不合规: 5</span>
-
-          </div>
-
-          <div class="preview-sections">
-            <p>审计范围 | 合规检查 | 改进建议</p>
-
-          </div>
-
-        </div>
-`
+      } catch (error) {
+        console.error('加载模板失败:', error)
+        ElMessage.error('加载模板失败: ' + error.message)
+      } finally {
+        loading.value = false
       }
-    ])
+    }
 
     const editorVisible = ref(false)
     const editorTitle = ref('编辑报告模板')
@@ -317,7 +306,8 @@ export default {
       name: '',
       content: '',
       isDefault: false,
-      created: ''
+      created: '',
+      preview: ''
     })
 
     // 解析 Markdown + 清洗
@@ -400,7 +390,7 @@ export default {
       const url = window.prompt('请输入图片 URL')
       if (!url) return
       const alt = window.prompt('图片替代文字（alt）') || ''
-      wrapSelection(`![${alt}](${url})`)
+      wrapSelection(``)
     }
 
     /* ========== 插入区块 ==========
@@ -434,30 +424,180 @@ export default {
 
     const editTemplate = (tpl) => {
       editorTitle.value = '编辑模板'
-      Object.assign(currentTemplate, tpl)
+      Object.assign(currentTemplate, {
+        ...tpl,
+        isDefault: tpl.isDefault // 确保isDefault属性被正确复制
+      })
       editorVisible.value = true
       nextTick(() => markdownTextarea.value?.focus())
     }
 
     const saveTemplate = () => {
+      if (!currentTemplate.name) {
+        ElMessage.warning('请输入模板名称')
+        return
+      }
+
+      // 更新预览
+      currentTemplate.preview = generatePreview(currentTemplate)
+
       if (!currentTemplate.id) {
-        currentTemplate.id = `tpl-${Date.now()}`
+        // 创建新模板
+        currentTemplate.id = `tpl-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`
         currentTemplate.created = new Date().toLocaleDateString()
         templates.value.push({ ...currentTemplate })
+        ElMessage.success('模板创建成功')
       } else {
+        // 更新现有模板
         const idx = templates.value.findIndex((t) => t.id === currentTemplate.id)
-        if (idx !== -1) templates.value[idx] = { ...currentTemplate }
+        if (idx !== -1) {
+          templates.value[idx] = { ...currentTemplate }
+          ElMessage.success('模板更新成功')
+        }
       }
+
       editorVisible.value = false
     }
 
     const setAsDefault = (tpl) => {
-      templates.value.forEach((t) => (t.isDefault = t.id === tpl.id))
+      templates.value.forEach(t => {
+        t.isDefault = t.id === tpl.id
+      })
+      ElMessage.success(`已设置"${tpl.name}"为默认模板`)
     }
 
     const deleteTemplate = (tpl) => {
-      templates.value = templates.value.filter((t) => t.id !== tpl.id)
-      if (tpl.isDefault && templates.value.length) templates.value[0].isDefault = true
+      ElMessageBox.confirm(
+          `确定要删除模板"${tpl.name}"吗？此操作不可恢复。`,
+          '删除确认',
+          {
+            confirmButtonText: '确认删除',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+      ).then(() => {
+        templates.value = templates.value.filter(t => t.id !== tpl.id)
+
+        // 如果删除的是默认模板，且还有剩余模板，设置第一个为默认
+        if (tpl.isDefault && templates.value.length > 0) {
+          templates.value[0].isDefault = true
+        }
+
+        ElMessage.success('模板已删除')
+      }).catch(() => {})
+    }
+
+    // 导出单个模板为JSON文件
+    const exportTemplate = (template) => {
+      // 创建JSON数据
+      const data = JSON.stringify(template, null, 2)
+      const blob = new Blob([data], { type: 'application/json' })
+
+      // 创建下载链接
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${template.name.replace(/[^\w]/g, '_')}_template.json`
+      document.body.appendChild(a)
+      a.click()
+
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 100)
+
+      ElMessage.success(`"${template.name}"模板已导出`)
+    }
+
+    // 批量导出所有模板
+    const exportAllTemplates = () => {
+      if (templates.value.length === 0) {
+        ElMessage.warning('没有模板可导出')
+        return
+      }
+
+      // 创建JSON数据
+      const data = JSON.stringify(templates.value, null, 2)
+      const blob = new Blob([data], { type: 'application/json' })
+
+      // 创建下载链接
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `all_templates_${new Date().toISOString().slice(0, 10)}.json`
+      document.body.appendChild(a)
+      a.click()
+
+      // 清理
+      setTimeout(() => {
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 100)
+
+      ElMessage.success(`已导出${templates.value.length}个模板`)
+    }
+
+    // 导入模板
+    const importTemplate = () => {
+      fileInput.value.click()
+    }
+
+    // 处理文件导入
+    const handleFileImport = (event) => {
+      const file = event.target.files[0]
+      if (!file) return
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const content = e.target.result
+          const importedTemplates = JSON.parse(content)
+
+          // 支持导入单个模板或多个模板
+          const templatesToImport = Array.isArray(importedTemplates)
+              ? importedTemplates
+              : [importedTemplates]
+
+          let importedCount = 0
+
+          templatesToImport.forEach(template => {
+            // 基本验证
+            if (!template.name || !template.content) {
+              ElMessage.warning('跳过无效模板: 缺少必要字段')
+              return
+            }
+
+            // 生成唯一ID
+            const newId = `tpl-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`
+
+            // 添加到模板列表
+            templates.value.push({
+              id: newId,
+              name: template.name,
+              content: template.content,
+              isDefault: template.isDefault || false,
+              created: new Date().toLocaleDateString(),
+              preview: generatePreview(template)
+            })
+
+            importedCount++
+          })
+
+          // 重置文件输入
+          event.target.value = ''
+
+          if (importedCount > 0) {
+            ElMessage.success(`成功导入${importedCount}个模板`)
+          }
+
+        } catch (error) {
+          console.error('导入模板失败:', error)
+          ElMessage.error('导入失败: ' + error.message)
+        }
+      }
+
+      reader.readAsText(file)
     }
 
     const resetCurrentTemplate = () => {
@@ -466,12 +606,15 @@ export default {
         name: '未命名模板',
         content: '# 报告标题\n\n## 章节标题\n...',
         isDefault: false,
-        created: ''
+        created: '',
+        preview: ''
       })
     }
 
-    const importTemplate = () => ElMessage.info('导入功能开发中')
-    const exportAllTemplates = () => ElMessage.success('所有模板已导出')
+    // 初始化时加载模板
+    onMounted(() => {
+      loadTemplates()
+    })
 
     /* ========== 导出到模板 ========== */
     return {
@@ -483,6 +626,8 @@ export default {
       selectedSection,
       renderedContent,
       markdownTextarea,
+      fileInput,
+      loading,
 
       // toolbar
       makeBold,
@@ -500,14 +645,14 @@ export default {
       saveTemplate,
       setAsDefault,
       deleteTemplate,
+      exportTemplate,
       importTemplate,
-      exportAllTemplates
+      exportAllTemplates,
+      handleFileImport
     }
   }
 }
 </script>
-
-
 <style scoped>
 /* 基础样式重置 */
 .report-template-view {

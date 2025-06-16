@@ -73,12 +73,28 @@ export default {
         content,
         tool,
         timestamp: new Date().toLocaleTimeString()
-      })
+      });
 
       if (this.autoScroll) {
+        // 添加安全滚动方法调用
         this.$nextTick(() => {
-          this.scrollToBottom()
-        })
+          this.safeScroll();
+        });
+      }
+    },
+    safeScroll() {
+      try {
+        this.scrollToBottom();
+      } catch (error) {
+        console.warn("安全滚动失败:", error.message);
+        // 后备方案：使用requestAnimationFrame
+        requestAnimationFrame(() => {
+          try {
+            this.scrollToBottom();
+          } catch {
+            // 最终忽略错误
+          }
+        });
       }
     },
 
@@ -103,8 +119,23 @@ export default {
     },
 
     scrollToBottom() {
-      const container = this.$refs.outputContainer
-      container.scrollTop = container.scrollHeight
+      const container = this.$refs.outputContainer;
+
+      // 添加安全检查，确保容器存在
+      if (!container) {
+        console.warn("无法滚动到容器底部 - 容器不存在");
+        return;
+      }
+
+      try {
+        // 使用标准滚动API替代
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'auto'
+        });
+      } catch (error) {
+        console.error("滚动错误:", error.message);
+      }
     },
 
     clearOutput() {
@@ -134,13 +165,22 @@ export default {
     },
 
     handleScroll() {
-      const container = this.$refs.outputContainer
-      const isAtBottom = container.scrollHeight - container.scrollTop === container.clientHeight
+      const container = this.$refs.outputContainer;
 
-      if (isAtBottom) {
-        this.autoScroll = true
-      } else {
-        this.autoScroll = false
+      // 添加容器存在性检查
+      if (!container) return;
+
+      // 添加安全计算
+      try {
+        const isAtBottom = container.scrollHeight - container.scrollTop === container.clientHeight;
+
+        if (isAtBottom) {
+          this.autoScroll = true;
+        } else {
+          this.autoScroll = false;
+        }
+      } catch (error) {
+        console.error("处理滚动时出错:", error.message);
       }
     },
 
@@ -198,7 +238,9 @@ export default {
     }
   },
   mounted() {
-    this.simulateScanOutput()
+    this.$nextTick(() => {
+      this.simulateScanOutput();
+    });
   }
 }
 </script>
