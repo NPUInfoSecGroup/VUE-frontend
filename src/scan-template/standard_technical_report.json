@@ -1,0 +1,7 @@
+{
+  "id": "tpl-003",
+  "name": "合规审计报告",
+  "isDefault": false,
+  "content": "# 合规审计报告\n\n## 审计范围\n...",
+  "preview": "<div class=\"template-preview-content\"><h3>合规审计报告</h3><div class=\"preview-stats\"><span class=\"stat-item\"><i class=\"fas fa-shield-alt\"></i>合规项: 28</span><span class=\"stat-item\"><i class=\"fas fa-times-circle\"></i>不合规: 5</span></div><div class=\"preview-sections\"><p>审计范围 | 合规检查 | 改进建议</p></div></div>"
+}
