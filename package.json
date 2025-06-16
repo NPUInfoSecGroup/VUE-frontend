@@ -14,15 +14,16 @@
     "axios": "^1.9.0",
     "element-plus": "^2.10.1",
     "entities": "4.5.0",
+    "vue-cli": "^2.9.6",
     "vue-router": "^4.5.1",
     "vuex": "^4.1.0"
   },
   "devDependencies": {
     "@vue/cli-service": "^5.0.8",
     "@vue/compiler-sfc": "^3.5.16",
-    "path-browserify": "^1.0.1",
-    "svg-sprite-loader": "^6.0.11",
     "dompurify": "^3.x.x",
-    "marked": "^9.x.x"
+    "marked": "^9.x.x",
+    "path-browserify": "^1.0.1",
+    "svg-sprite-loader": "^6.0.11"
   }
 }
